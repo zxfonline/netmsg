@@ -4,7 +4,13 @@
 package netmsg
 
 import (
+	"errors"
 	"sync"
+	"time"
+)
+
+const (
+	DEFAULT_ACCESS_TIMEOUT = 60 * time.Second
 )
 
 type PipeMsg struct {
@@ -35,11 +41,19 @@ func (s *Session) Write(data *PipeMsg) {
 	s.Hander.Pipe <- data
 }
 
-func (s *Session) Read() *PipeMsg {
-	if msg, err := <-s.Hander.Pipe; err {
-		return msg
+func (s *Session) Read(timeout time.Duration) *PipeMsg {
+	if timeout > 0 {
+		blockChan := time.NewTimer(timeout)
+		select {
+		case msg := <-s.Hander.Pipe:
+			blockChan.Stop()
+			return msg
+		case <-blockChan.C:
+			return &PipeMsg{Error: errors.New("timeout")}
+		}
+	} else {
+		return <-s.Hander.Pipe
 	}
-	return nil
 }
 
 func NewSession() int64 {

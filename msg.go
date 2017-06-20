@@ -5,6 +5,7 @@ package netmsg
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/zxfonline/taskexcutor"
 )
@@ -41,7 +42,16 @@ func AsyncSendMsg(excutor Excutor, data interface{}, callback CallBackMsg) error
 
 func RecMsg(sId int64) interface{} {
 	if s := GetSession(sId); s != nil {
-		rt := s.Read()
+		rt := s.Read(0)
+		DelSession(sId)
+		return rt
+	}
+	return nil
+}
+
+func RecMsgWithTime(sId int64, timeout time.Duration) interface{} {
+	if s := GetSession(sId); s != nil {
+		rt := s.Read(timeout)
 		DelSession(sId)
 		return rt
 	}
