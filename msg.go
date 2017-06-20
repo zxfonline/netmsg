@@ -23,7 +23,6 @@ func SyncSendMsg(excutor Excutor, sessionid int64, data interface{}, callback Ca
 		msg := (params[0]).(Msg)
 		if s := GetSession(msg.SessionId); s != nil {
 			defer func() {
-				DelSession(msg.SessionId)
 				if err := recover(); err != nil {
 					s.Write(&PipeMsg{Error: fmt.Errorf("%v", err)})
 				}
@@ -42,7 +41,9 @@ func AsyncSendMsg(excutor Excutor, data interface{}, callback CallBackMsg) error
 
 func RecMsg(sId int64) interface{} {
 	if s := GetSession(sId); s != nil {
-		return s.Read()
+		rt := s.Read()
+		DelSession(sId)
+		return rt
 	}
 	return nil
 }
