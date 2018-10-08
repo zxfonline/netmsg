@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/zxfonline/taskexcutor"
+	"github.com/zxfonline/gerror"
+	"github.com/zxfonline/golog"
+	"github.com/zxfonline/taskexcutor"
 )
 
 type Msg struct {
@@ -19,8 +21,8 @@ type Msg struct {
 //事件回调
 type CallBackMsg func(interface{}) interface{}
 
-func SyncSendMsg(excutor Excutor, sessionid int64, data interface{}, callback CallBackMsg) error {
-	return excutor.Excute(NewTaskService(func(params ...interface{}) {
+func SendMsg(excutor taskexcutor.Excutor, sessionid int64, data interface{}, callback CallBackMsg, taskid interface{}) error {
+	task := taskexcutor.NewTaskService(func(params ...interface{}) {
 		msg := (params[0]).(Msg)
 		if s := GetSession(msg.SessionId); s != nil {
 			defer func() {
@@ -30,14 +32,19 @@ func SyncSendMsg(excutor Excutor, sessionid int64, data interface{}, callback Ca
 			}()
 			s.Write(&PipeMsg{Data: msg.CallBack(msg.Data)})
 		}
-	}, Msg{SessionId: sessionid, Data: data, CallBack: callback}))
+	}, Msg{SessionId: sessionid, Data: data, CallBack: callback})
+	task.ID = taskid
+	return excutor.Excute(task)
 }
 
-func AsyncSendMsg(excutor Excutor, data interface{}, callback CallBackMsg) error {
-	return excutor.Excute(NewTaskService(func(params ...interface{}) {
+func AsyncSendMsg(excutor taskexcutor.Excutor, data interface{}, callback CallBackMsg, taskid interface{}) error {
+	task := taskexcutor.NewTaskService(func(params ...interface{}) {
 		msg := (params[0]).(Msg)
+		defer gerror.PrintPanicStack()
 		msg.CallBack(msg.Data)
-	}, Msg{Data: data, CallBack: callback}))
+	}, Msg{Data: data, CallBack: callback})
+	task.ID = taskid
+	return excutor.Excute(task)
 }
 
 func RecMsg(sId int64) interface{} {

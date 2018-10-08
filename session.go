@@ -4,13 +4,14 @@
 package netmsg
 
 import (
-	"errors"
+	"fmt"
 	"sync"
 	"time"
 )
 
 const (
-	DEFAULT_ACCESS_TIMEOUT = 60 * time.Second
+	DEFAULT_ACCESS_TIMEOUT       = 30 * time.Second
+	RetCode_CODE_TIME_OUT  int32 = 10000
 )
 
 type PipeMsg struct {
@@ -42,17 +43,16 @@ func (s *Session) Write(data *PipeMsg) {
 }
 
 func (s *Session) Read(timeout time.Duration) *PipeMsg {
-	if timeout > 0 {
-		blockChan := time.NewTimer(timeout)
-		select {
-		case msg := <-s.Hander.Pipe:
-			blockChan.Stop()
-			return msg
-		case <-blockChan.C:
-			return &PipeMsg{Error: errors.New("timeout")}
-		}
-	} else {
-		return <-s.Hander.Pipe
+	if timeout == 0 {
+		timeout = DEFAULT_ACCESS_TIMEOUT
+	}
+	blockChan := time.NewTimer(timeout)
+	select {
+	case msg := <-s.Hander.Pipe:
+		blockChan.Stop()
+		return msg
+	case <-blockChan.C:
+		return &PipeMsg{Error: fmt.Errorf("%d", RetCode_CODE_TIME_OUT)} //Error为字符串错误码，外部可用于识别错误类型
 	}
 }
 
