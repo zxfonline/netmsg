@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zxfonline/gerror"
 	"github.com/zxfonline/golog"
 	"github.com/zxfonline/taskexcutor"
 )
@@ -40,7 +39,12 @@ func SendMsg(excutor taskexcutor.Excutor, sessionid int64, data interface{}, cal
 func AsyncSendMsg(excutor taskexcutor.Excutor, data interface{}, callback CallBackMsg, taskid interface{}) error {
 	task := taskexcutor.NewTaskService(func(params ...interface{}) {
 		msg := (params[0]).(Msg)
-		defer gerror.PrintPanicStack()
+		defer func() {
+			if err := recover(); err != nil {
+				// log.Println(err)
+				golog.Errorf("async send msg err:%v.", err)
+			}
+		}()
 		msg.CallBack(msg.Data)
 	}, Msg{Data: data, CallBack: callback})
 	task.ID = taskid
