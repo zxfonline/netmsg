@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DEFAULT_ACCESS_TIMEOUT       = 90 * time.Second
+	DEFAULT_ACCESS_TIMEOUT       = 45 * time.Second
 	RetCode_CODE_TIME_OUT  int32 = 10000
 )
 
