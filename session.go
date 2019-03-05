@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DEFAULT_ACCESS_TIMEOUT       = 30 * time.Second
+	DEFAULT_ACCESS_TIMEOUT       = 90 * time.Second
 	RetCode_CODE_TIME_OUT  int32 = 10000
 )
 
@@ -39,7 +39,10 @@ func init() {
 }
 
 func (s *Session) Write(data *PipeMsg) {
-	s.Hander.Pipe <- data
+	select {
+	case s.Hander.Pipe <- data:
+	default:
+	}
 }
 
 func (s *Session) Read(timeout time.Duration) *PipeMsg {
@@ -60,7 +63,7 @@ func NewSession() int64 {
 	m.Lock()
 	defer m.Unlock()
 	h := Handler{
-		Pipe: make(chan *PipeMsg),
+		Pipe: make(chan *PipeMsg, 1),
 	}
 	idPool++
 	s := Session{
